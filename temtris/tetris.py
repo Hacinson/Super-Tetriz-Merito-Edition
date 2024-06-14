@@ -129,7 +129,6 @@ class Piece:
         self.color = shape_colors[shapes.index(shape)]
         self.rotation = 0
 
-# Funkcje pomocnicze
 def create_grid(locked_positions={}):
     grid = [[(0, 0, 0) for x in range(10)] for y in range(20)]
     
@@ -240,15 +239,11 @@ def draw_next_shape(piece, surface):
 
 def draw_window(surface, grid, score=0):
     background_image = pygame.image.load('data/background.jpg')
-
-    # Skalowanie obrazka do rozmiarów planszy
     background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
-
-    # Rysowanie tła planszy
     surface.blit(background_image, (0, 0))
     
     font = pygame.font.Font(pygame.font.get_default_font(), 60)
-    label = font.render('Tetris', True, (255, 255, 255))
+    label = font.render('Merito Tetris :3', True, (255, 255, 255))
     
     surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), 30))
     
@@ -264,10 +259,10 @@ def draw_window(surface, grid, score=0):
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
 
 def main():
-
-    pygame.mixer.init()  # Inicjalizacja modułu dźwięku
+    pygame.mixer.init()
+    pygame.mixer.music.stop()
     pygame.mixer.music.load('data/theme.mp3')
-    pygame.mixer.music.play(-1)  # Odtwarzaj muzykę w pętli
+    pygame.mixer.music.play(-1)
     locked_positions = {}
     grid = create_grid(locked_positions)
     
@@ -278,14 +273,18 @@ def main():
     clock = pygame.time.Clock()
     fall_time = 0
     level_time = 0
+    down_time = 0
+    down_pressed = False
     score = 0
     
     while run:
         grid = create_grid(locked_positions)
         fall_speed = 0.27
+        down_speed = 0.05
         
         fall_time += clock.get_rawtime()
         level_time += clock.get_rawtime()
+        down_time += clock.get_rawtime()
         clock.tick()
         
         if level_time / 1000 > 5:
@@ -293,10 +292,19 @@ def main():
             if fall_speed > 0.12:
                 fall_speed -= 0.005
         
+        # Zwykłe spadanie bloku
         if fall_time / 1000 >= fall_speed:
             fall_time = 0
             current_piece.y += 1
-            if not (valid_space(current_piece, grid)) and current_piece.y > 0:
+            if not valid_space(current_piece, grid) and current_piece.y > 0:
+                current_piece.y -= 1
+                change_piece = True
+        
+        # Przyspieszone spadanie bloku przy trzymaniu klawisza w dół
+        if down_pressed and down_time / 1000 >= down_speed:
+            down_time = 0
+            current_piece.y += 1
+            if not valid_space(current_piece, grid):
                 current_piece.y -= 1
                 change_piece = True
         
@@ -316,6 +324,7 @@ def main():
                     if not valid_space(current_piece, grid):
                         current_piece.x -= 1
                 if event.key == pygame.K_DOWN:
+                    down_pressed = True
                     current_piece.y += 1
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
@@ -323,6 +332,10 @@ def main():
                     current_piece.rotation = (current_piece.rotation + 1) % len(current_piece.shape)
                     if not valid_space(current_piece, grid):
                         current_piece.rotation = (current_piece.rotation - 1) % len(current_piece.shape)
+            
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_DOWN:
+                    down_pressed = False
         
         shape_pos = convert_shape_format(current_piece)
         
@@ -347,13 +360,12 @@ def main():
         if check_lost(locked_positions):
             run = False
             pygame.mixer.music.stop()
-            game_over_sound = pygame.mixer.Sound('data/gameover.mp3')  # Wczytanie dźwięku
-            game_over_sound.play()  # Odtworzenie dźwięku
-            game_over_image = pygame.image.load('data/gameover.png')  # Wczytanie obrazka
-            win.blit(game_over_image, (top_left_x + play_width / 2 - game_over_image.get_width() / 2, top_left_y + play_height / 2 - game_over_image.get_height() / 2))  # Wyświetlenie obrazka
+            game_over_sound = pygame.mixer.Sound('data/gameover.mp3')
+            game_over_sound.play()
+            game_over_image = pygame.image.load('data/gameover.png')
+            win.blit(game_over_image, (top_left_x + play_width / 2 - game_over_image.get_width() / 2, top_left_y + play_height / 2 - game_over_image.get_height() / 2))
             pygame.display.update()
-            pygame.time.delay(2000)  # Opóźnienie przed zakończeniem gry
-
+            pygame.time.delay(2000)
 
     pygame.display.update()
     pygame.time.delay(2000)
@@ -361,6 +373,8 @@ def main():
 def main_menu():
     run = True
     while run:
+        #menu_image = pygame.image.load('data/menu.jpg')
+        #win.blit(menu_image, (top_left_x + play_width / 2 - menu_image.get_width() / 2, top_left_y + play_height / 2 - menu_image.get_height() / 2))
         win.fill((0, 0, 0))
         draw_text_middle('Press Any Key To Play', 60, (255, 255, 255), win)
         pygame.display.update()
